@@ -1,8 +1,8 @@
 #!/usr/bin/env python3raise
 
 import brian2
-from brian2 import NeuronGroup, SpikeMonitor, StateMonitor
-from brian2 import mV, pA, ms, second, Hz, Gohm
+from brian2 import NeuronGroup, SpikeMonitor, StateMonitor, exp
+from brian2 import mV, pA, ms, second, Hz, Gohm, volt
 import brian2.numpy_ as np
 import matplotlib.pyplot as plt
 import os.path
@@ -123,21 +123,24 @@ else:
 # note that functions like np.histogram use bin edges, but for
 # plotting we want to plot the values over the centers of the bins
 
-bin_centers = ...
+bins = np.arange(u0_.min(), u0_.max(), 1 * mV)
+[u0_hist, edges] = np.histogram(u0_, bins)
+bin_centers = (edges + (edges[1] - edges[0])/2)[:-1] * mV * 1000  # one bin less than edges
 
 #
 # calculate histograms using these bins
 #
 
-u0_hist = ...
-u0_at_spike_hist = ...
+u0_spikes = u0_[np.isin(t_, spikes)]  # u0_t of spike train S(t)
+[u0_at_spike_hist, _] = np.histogram(u0_spikes, bins)
+
 
 #
 # calculate p(spike|u) and rho (for each bin)
 #
 
-p_spike = ...
-rho = ...
+p_spike = u0_at_spike_hist / u0_hist  # p(spike|u0)
+rho = bin_centers - u_th
 
 #
 # fit an exponential of the form
@@ -145,9 +148,10 @@ rho = ...
 #   rho(V) = 1/dt * exp(c1*V + c0)
 #
 
-c1, c0 = ...
-rho_fit = ...
+# np.linalg.lsts()
 
+# c1, c0 = ...
+# rho_fit = 1 / dt * np.exp(c1 * u0_ + c0)
 
 # plots
 
@@ -170,20 +174,20 @@ plt.ylabel(r'$p(\mathrm{spike} | u)$')
 plt.subplot(2, 2, 3)
 plt.scatter(bin_centers, rho)
 plt.autoscale(axis='x', tight=True)
-plt.autoscale(False)
-plt.plot(bin_centers, rho_fit, c='k', label='fit')
-plt.autoscale(axis='x', tight=True)
+# plt.autoscale(False)
+# plt.plot(bin_centers, rho_fit, c='k', label='fit')
+# plt.autoscale(axis='x', tight=True)
 plt.xlabel(r'$u_0$ / mV')
 plt.ylabel(r'$\rho(u)$ / ms$^{-1}$')
-plt.legend(loc='best')
+# plt.legend(loc='best')
 
-plt.subplot(2, 2, 4)
-plt.scatter(...)  # TODO, scatter plot of data in log space where we perform the linear fit
-plt.plot(...)  # plot linear fit
-plt.autoscale(axis='x', tight=True)
-plt.xlabel(r'$u_0$ / mV')
-plt.ylabel(r'$\log (-\log(1 - p(\mathrm{spike} | u)$')
-plt.legend(loc='best')
+# plt.subplot(2, 2, 4)
+# plt.scatter(...)  # TODO, scatter plot of data in log space where we perform the linear fit
+# plt.plot(...)  # plot linear fit
+# plt.autoscale(axis='x', tight=True)
+# plt.xlabel(r'$u_0$ / mV')
+# plt.ylabel(r'$\log (-\log(1 - p(\mathrm{spike} | u)$')
+# plt.legend(loc='best')
 
 plt.tight_layout()
 
@@ -198,17 +202,17 @@ srm_rho = ...
 
 # plot, e.g. like this:
 
-plt.figure(figsize=(6, 3.5))
+# plt.figure(figsize=(6, 3.5))
 
-plt.fill_between(t_rho/ms, np.zeros_like(lif_rho*ms), lif_rho*ms, label=r'lif')
-plt.autoscale(axis='x', tight=True)
-plt.autoscale(enable=False)
-plt.plot(t_rho/ms, srm_rho*ms, c='k', lw=1, ls='--', label=r'srm')
-plt.locator_params(axis='x', nbins=5)
-plt.locator_params(axis='y', nbins=2)
-plt.xlabel(r'$t$ / ms')
-plt.ylabel(r'$\rho$ / ms$^{-1}$')
-plt.legend(loc='best')
+# plt.fill_between(t_rho/ms, np.zeros_like(lif_rho*ms), lif_rho*ms, label=r'lif')
+# plt.autoscale(axis='x', tight=True)
+# plt.autoscale(enable=False)
+# plt.plot(t_rho/ms, srm_rho*ms, c='k', lw=1, ls='--', label=r'srm')
+# plt.locator_params(axis='x', nbins=5)
+# plt.locator_params(axis='y', nbins=2)
+# plt.xlabel(r'$t$ / ms')
+# plt.ylabel(r'$\rho$ / ms$^{-1}$')
+# plt.legend(loc='best')
 
 plt.tight_layout()
 

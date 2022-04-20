@@ -145,14 +145,13 @@ rho = - np.log(1 - p_spike) / dt  # rho_fit(u0): reformulation of rho for stocha
 b = np.log(dt * rho)
 inf_mask = b != -np.inf
 b = b[inf_mask]
-A = np.array([bin_centers, np.ones(bin_centers.shape[0])]).T
+A = np.array([bin_centers / mV, np.ones(bin_centers.shape[0])]).T
 A = A[inf_mask]
-x_ = np.linalg.lstsq(A, b)
+x_ = np.linalg.lstsq(A, b, rcond=None)
 
 c1 = x_[0][0]
 c0 = x_[0][1]
-rho_fit = 1 / dt * np.exp(c1 * u0_ / mV + c0)
-
+rho_fit = 1 / dt * np.exp(c1 * bin_centers / mV + c0)
 
 plt.figure(figsize=(8, 6))
 
@@ -171,22 +170,22 @@ plt.xlabel(r'$u_0$ / mV')
 plt.ylabel(r'$p(\mathrm{spike} | u)$')
 
 plt.subplot(2, 2, 3)
-plt.scatter(bin_centers, rho)
+plt.scatter(bin_centers, rho / 1000)
 plt.autoscale(axis='x', tight=True)
 plt.autoscale(False)
-plt.plot(bin_centers, rho_fit, c='k', label='fit')
+plt.plot(bin_centers, rho_fit / 1000, c='k', label='fit')
 plt.autoscale(axis='x', tight=True)
 plt.xlabel(r'$u_0$ / mV')
 plt.ylabel(r'$\rho(u)$ / ms$^{-1}$')
 # plt.legend(loc='best')
 
-# plt.subplot(2, 2, 4)
-# plt.scatter(...)  # TODO, scatter plot of data in log space where we perform the linear fit
-# plt.plot(...)  # plot linear fit
-# plt.autoscale(axis='x', tight=True)
-# plt.xlabel(r'$u_0$ / mV')
-# plt.ylabel(r'$\log (-\log(1 - p(\mathrm{spike} | u)$')
-# plt.legend(loc='best')
+plt.subplot(2, 2, 4)
+plt.scatter(bin_centers[inf_mask], b)  # TODO, scatter plot of data in log space where we perform the linear fit
+plt.plot(bin_centers[inf_mask], bin_centers[inf_mask] * c1 / mV + c0)  # plot linear fit
+plt.autoscale(axis='x', tight=True)
+plt.xlabel(r'$u_0$ / mV')
+plt.ylabel(r'$\log (-\log(1 - p(\mathrm{spike} | u)$')
+plt.legend(loc='best')
 
 plt.tight_layout()
 

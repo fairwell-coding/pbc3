@@ -140,20 +140,19 @@ u0_spikes = u0_[np.isin(t_, spikes)]  # u0_t of spike train S(t)
 #
 
 p_spike = u0_at_spike_hist / u0_hist  # p(spike|u0)
-rho = bin_centers - u_th
+rho = - np.log(1 - p_spike) / dt  # rho_fit(u0): reformulation of rho for stochastic Poisson process
 
-#
-# fit an exponential of the form
-#
-#   rho(V) = 1/dt * exp(c1*V + c0)
-#
+b = np.log(dt * rho)
+inf_mask = b != -np.inf
+b = b[inf_mask]
+A = np.array([bin_centers, np.ones(bin_centers.shape[0])]).T
+A = A[inf_mask]
+x_ = np.linalg.lstsq(A, b)
 
-# np.linalg.lsts()
+c1 = x_[0][0]
+c0 = x_[0][1]
+rho_fit = 1 / dt * np.exp(c1 * u0_ / mV + c0)
 
-# c1, c0 = ...
-# rho_fit = 1 / dt * np.exp(c1 * u0_ + c0)
-
-# plots
 
 plt.figure(figsize=(8, 6))
 
@@ -174,9 +173,9 @@ plt.ylabel(r'$p(\mathrm{spike} | u)$')
 plt.subplot(2, 2, 3)
 plt.scatter(bin_centers, rho)
 plt.autoscale(axis='x', tight=True)
-# plt.autoscale(False)
-# plt.plot(bin_centers, rho_fit, c='k', label='fit')
-# plt.autoscale(axis='x', tight=True)
+plt.autoscale(False)
+plt.plot(bin_centers, rho_fit, c='k', label='fit')
+plt.autoscale(axis='x', tight=True)
 plt.xlabel(r'$u_0$ / mV')
 plt.ylabel(r'$\rho(u)$ / ms$^{-1}$')
 # plt.legend(loc='best')

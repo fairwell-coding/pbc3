@@ -323,7 +323,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
     du_pas/dt = ( -(u_pas - u_rest) + R_m * I) / tau_m : volt (unless refractory)
     '''
 
-        thres = 'rand() >= 1 - exp(-exp((c1 * u) / mV + c0))'  # LIF neuron crosses threshold
+        thres = 'rand() < 1 - exp(-exp((c1 * u) / mV + c0))'  # LIF neuron crosses threshold
         reset = 'u = u_reset\nu_pas = u_reset'  # reset LIF, force passive neuron to reset
 
         neuron = NeuronGroup(num_neurons, lif_eqs, threshold=thres, reset=reset, refractory=Delta_abs, method='euler')
@@ -383,43 +383,47 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
 
     return dt, spikes, t_, u0_, num_neurons
 
-def __task3b_stochastic_srm_model(dt, spikes, t_, u0_, num_neurons):
+def __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neurons):
+
+    t_rho = np.arange(0 * ms, 200 * ms, dt)
 
     # 1. Estimate rho_base
-    spike_indices = np.digitize(spikes, np.arange(0 * ms, 200 * ms, dt))
-    rho_base = np.zeros(spike_indices.shape[0])
+    spike_indices_base = np.digitize(spikes_base, t_rho)
+    rho_base = np.zeros(t_rho.shape[0])
 
     for i in np.arange(1, 2000):
-        rho_base[i] = np.count_nonzero(spike_indices == i) / num_neurons
+        rho_base[i] = np.count_nonzero(spike_indices_base == i) / num_neurons
 
-    # 2. Set up same number of stochastic neurons
+    # 2. Estimate rho_srm
 
-    pass
+    spike_indices_stochastic = np.digitize(spikes_stochastic, t_rho)
+    rho_srm = np.zeros(t_rho.shape[0])
+
+    for i in np.arange(1, 2000):
+        rho_srm[i] = np.count_nonzero(spike_indices_stochastic == i) / num_neurons
+
+    return t_rho, rho_base, rho_srm
+
+def __task3b_figures(t_rho, rho_base, rho_srm):
+    plt.figure(figsize=(6, 3.5))
+
+    plt.fill_between(t_rho/ms, np.zeros_like(rho_base*ms), rho_base*ms, label=r'lif')
+    # plt.autoscale(axis='x', tight=True)
+    # plt.autoscale(enable=False)
+    plt.plot(t_rho/ms, rho_srm*ms, c='k', lw=1, ls='--', label=r'srm')
+    # plt.locator_params(axis='x', nbins=5)
+    # plt.locator_params(axis='y', nbins=2)
+    plt.xlabel(r'$t$ / ms')
+    plt.ylabel(r'$\rho$ / ms$^{-1}$')
+    plt.legend(loc='best')
+
+    plt.tight_layout()
 
 
-dt, spikes, t_, u0_, num_neurons = __task3b_prepare_base_neurons(datafile_3b_base)
-dt, spikes, t_, u0_, num_neurons = __task3b_prepare_stochastic_neurons(datafile_3b_stochastic, c0, c1)
-u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit = __task3b_stochastic_srm_model(dt, spikes, t_, u0_, num_neurons)
-
-t_rho = ...
-lif_rho = ...
-srm_rho = ...
-
-# plot, e.g. like this:
-
-# plt.figure(figsize=(6, 3.5))
-
-# plt.fill_between(t_rho/ms, np.zeros_like(lif_rho*ms), lif_rho*ms, label=r'lif')
-# plt.autoscale(axis='x', tight=True)
-# plt.autoscale(enable=False)
-# plt.plot(t_rho/ms, srm_rho*ms, c='k', lw=1, ls='--', label=r'srm')
-# plt.locator_params(axis='x', nbins=5)
-# plt.locator_params(axis='y', nbins=2)
-# plt.xlabel(r'$t$ / ms')
-# plt.ylabel(r'$\rho$ / ms$^{-1}$')
-# plt.legend(loc='best')
-
-plt.tight_layout()
+dt, spikes_base, t_, u0_, num_neurons = __task3b_prepare_base_neurons(datafile_3b_base)
+dt, spikes_stochastic, t_, u0_, num_neurons = __task3b_prepare_stochastic_neurons(datafile_3b_stochastic, c0, c1)
+t_rho, rho_base, rho_srm = __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neurons)
+__task3b_figures(t_rho, rho_base, rho_srm)
 
 
 plt.show() # avoid having multiple plt.show()s in your code

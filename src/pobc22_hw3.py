@@ -283,6 +283,7 @@ def __task3b_prepare_base_neurons(datafile):
 
     return dt, spikes, t_, u0_, num_neurons
 
+
 def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
     num_neurons = 1000
 
@@ -383,6 +384,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
 
     return dt, spikes, t_, u0_, num_neurons
 
+
 def __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neurons):
 
     t_rho = np.arange(0 * ms, 200 * ms, dt)
@@ -404,8 +406,9 @@ def __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neuron
 
     return t_rho, rho_base, rho_srm
 
+
 def __task3b_figures(t_rho, rho_base, rho_srm):
-    plt.figure(figsize=(6, 3.5))
+    plt.figure(3, figsize=(6, 3.5))
 
     plt.fill_between(t_rho/ms, np.zeros_like(rho_base*ms), rho_base*ms, label=r'lif')
     # plt.autoscale(axis='x', tight=True)
@@ -417,6 +420,9 @@ def __task3b_figures(t_rho, rho_base, rho_srm):
     plt.ylabel(r'$\rho$ / ms$^{-1}$')
     plt.legend(loc='best')
 
+    plt.figure(4, figsize=(6, 3.5))
+    plt.plot(t_rho/ms, rho_base*ms - rho_srm*ms)
+
     plt.tight_layout()
 
 
@@ -425,5 +431,4 @@ dt, spikes_stochastic, t_, u0_, num_neurons = __task3b_prepare_stochastic_neuron
 t_rho, rho_base, rho_srm = __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neurons)
 __task3b_figures(t_rho, rho_base, rho_srm)
 
-
-plt.show() # avoid having multiple plt.show()s in your code
+plt.show()

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3raise
 
 import brian2
-from brian2 import NeuronGroup, SpikeMonitor, StateMonitor, exp
+from brian2 import NeuronGroup, SpikeMonitor, StateMonitor, TimedArray, exp
 from brian2 import mV, pA, ms, second, Hz, Gohm, volt
 import brian2.numpy_ as np
 import matplotlib.pyplot as plt
@@ -111,7 +111,7 @@ def __task3a_prepare_data(datafile):
 
         dt, t_, I_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u = data
 
-    return dt, spikes, t_, u0_
+    return dt, spikes, t_, u0_, I_
 
 def __task3a_stochastic_srm_model(dt, spikes, t_, u0_):
     bins = np.arange(u0_.min(), u0_.max(), 1 * mV)
@@ -172,9 +172,9 @@ def __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, in
 
     plt.tight_layout()
 
-dt, spikes, t_, u0_ = __task3a_prepare_data(datafile_3a)
+dt, spikes, t_, u0_, I_ = __task3a_prepare_data(datafile_3a)
 u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit = __task3a_stochastic_srm_model(dt, spikes, t_, u0_)
-# __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit)
+__task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit)
 
 # -------------------------------------------------------------------
 
@@ -183,8 +183,8 @@ u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_f
 datafile_3b_base = 'data_lif_3b_base.pkl'
 datafile_3b_stochastic = 'data_lif_3b_stochastic.pkl'
 
-def __task3b_prepare_base_neurons(datafile):
-    num_neurons = 1000
+def __task3b_prepare_base_neurons(datafile, I_):
+    num_neurons = 6000
 
     if not os.path.exists(datafile):
 
@@ -202,9 +202,7 @@ def __task3b_prepare_base_neurons(datafile):
         R_m = 0.03 * Gohm
         Delta_abs = 0 * ms
 
-        I_mean = 500 * pA
-        I_sigma = 250 * pA
-        tau_I = 5 * ms
+        I = TimedArray(I_, dt)
 
         sigma_u = 1 * mV
 
@@ -218,9 +216,8 @@ def __task3b_prepare_base_neurons(datafile):
         # and the passive model neuron as a single model here
 
         lif_eqs = '''
-    dI/dt = -(I - I_mean) / tau_I + I_sigma * sqrt(2/tau_I) * xi_1 : ampere
-    du/dt = ( -(u - u_rest) + R_m * I) / tau_m + sigma_u * sqrt(2/tau_m) * xi_2 : volt (unless refractory)
-    du_pas/dt = ( -(u_pas - u_rest) + R_m * I) / tau_m : volt (unless refractory)
+    du/dt = ( -(u - u_rest) + R_m * I(t)) / tau_m + sigma_u * sqrt(2/tau_m) * xi_2 : volt (unless refractory)
+    du_pas/dt = ( -(u_pas - u_rest) + R_m * I(t)) / tau_m : volt (unless refractory)
     '''
 
         thres = 'u >= u_th'  # LIF neuron crosses threshold
@@ -230,7 +227,7 @@ def __task3b_prepare_base_neurons(datafile):
         neuron.u = u_rest
         neuron.u_pas = u_rest
 
-        state_mon = StateMonitor(neuron, ['I', 'u', 'u_pas'], record=True)
+        state_mon = StateMonitor(neuron, ['u', 'u_pas'], record=True)
         spike_mon = SpikeMonitor(neuron)
 
         net.add(neuron, state_mon, spike_mon)
@@ -247,7 +244,6 @@ def __task3b_prepare_base_neurons(datafile):
         print('firing frequency: {0:.1f} Hz'.format(rate / Hz))
 
         t_ = state_mon.t[:]
-        I_ = state_mon.I[0]
         u_ = state_mon.u[0]
         u0_ = state_mon.u_pas[0]
 
@@ -270,7 +266,7 @@ def __task3b_prepare_base_neurons(datafile):
 
         plt.tight_layout()
 
-        data = [dt, t_, I_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u]
+        data = [dt, t_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u]
 
         with open(datafile, 'wb') as f:
             pkl.dump(data, f)
@@ -279,13 +275,13 @@ def __task3b_prepare_base_neurons(datafile):
         with open(datafile, 'rb') as f:
             data = pkl.load(f)
 
-        dt, t_, I_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u = data
+        dt, t_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u = data
 
     return dt, spikes, t_, u0_, num_neurons
 
 
-def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
-    num_neurons = 1000
+def __task3b_prepare_stochastic_neurons(datafile, c0, c1, I_):
+    num_neurons = 6000
 
     if not os.path.exists(datafile):
 
@@ -303,9 +299,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
         R_m = 0.03 * Gohm
         Delta_abs = 0 * ms
 
-        I_mean = 500 * pA
-        I_sigma = 250 * pA
-        tau_I = 5 * ms
+        I = TimedArray(I_, dt)
 
         sigma_u = 1 * mV
 
@@ -319,9 +313,8 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
         # and the passive model neuron as a single model here
 
         lif_eqs = '''
-    dI/dt = -(I - I_mean) / tau_I : ampere
-    du/dt = ( -(u - u_rest) + R_m * I) / tau_m : volt (unless refractory)
-    du_pas/dt = ( -(u_pas - u_rest) + R_m * I) / tau_m : volt (unless refractory)
+    du/dt = ( -(u - u_rest) + R_m * I(t)) / tau_m : volt (unless refractory)
+    du_pas/dt = ( -(u_pas - u_rest) + R_m * I(t)) / tau_m : volt (unless refractory)
     '''
 
         thres = 'rand() < 1 - exp(-exp((c1 * u) / mV + c0))'  # LIF neuron crosses threshold
@@ -331,7 +324,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
         neuron.u = u_rest
         neuron.u_pas = u_rest
 
-        state_mon = StateMonitor(neuron, ['I', 'u', 'u_pas'], record=True)
+        state_mon = StateMonitor(neuron, ['u', 'u_pas'], record=True)
         spike_mon = SpikeMonitor(neuron)
 
         net.add(neuron, state_mon, spike_mon)
@@ -348,7 +341,6 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
         print('firing frequency: {0:.1f} Hz'.format(rate / Hz))
 
         t_ = state_mon.t[:]
-        I_ = state_mon.I[0]
         u_ = state_mon.u[0]
         u0_ = state_mon.u_pas[0]
 
@@ -371,7 +363,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
 
         plt.tight_layout()
 
-        data = [dt, t_, I_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u]
+        data = [dt, t_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u]
 
         with open(datafile, 'wb') as f:
             pkl.dump(data, f)
@@ -380,7 +372,7 @@ def __task3b_prepare_stochastic_neurons(datafile, c0, c1):
         with open(datafile, 'rb') as f:
             data = pkl.load(f)
 
-        dt, t_, I_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u = data
+        dt, t_, u_, u0_, spikes, u_rest, u_reset, u_th, tau_m, R_m, Delta_abs, sigma_u = data
 
     return dt, spikes, t_, u0_, num_neurons
 
@@ -426,8 +418,8 @@ def __task3b_figures(t_rho, rho_base, rho_srm):
     plt.tight_layout()
 
 
-dt, spikes_base, t_, u0_, num_neurons = __task3b_prepare_base_neurons(datafile_3b_base)
-dt, spikes_stochastic, t_, u0_, num_neurons = __task3b_prepare_stochastic_neurons(datafile_3b_stochastic, c0, c1)
+dt, spikes_base, t_, u0_, num_neurons = __task3b_prepare_base_neurons(datafile_3b_base, I_)
+dt, spikes_stochastic, t_, u0_, num_neurons = __task3b_prepare_stochastic_neurons(datafile_3b_stochastic, c0, c1, I_)
 t_rho, rho_base, rho_srm = __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neurons)
 __task3b_figures(t_rho, rho_base, rho_srm)
 

@@ -113,6 +113,7 @@ def __task3a_prepare_data(datafile):
 
     return dt, spikes, t_, u0_, I_
 
+
 def __task3a_stochastic_srm_model(dt, spikes, t_, u0_):
     bins = np.arange(u0_.min(), u0_.max(), 1 * mV)
     [u0_hist, edges] = np.histogram(u0_, bins)
@@ -135,6 +136,7 @@ def __task3a_stochastic_srm_model(dt, spikes, t_, u0_):
     rho_fit = 1 / dt * np.exp(c1 * bin_centers / mV + c0)
 
     return u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit
+
 
 def __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit):
     plt.figure(figsize=(8, 6))
@@ -172,6 +174,7 @@ def __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, in
 
     plt.tight_layout()
 
+
 dt, spikes, t_, u0_, I_ = __task3a_prepare_data(datafile_3a)
 u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit = __task3a_stochastic_srm_model(dt, spikes, t_, u0_)
 __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_mask, c1, c0, rho_fit)
@@ -182,6 +185,7 @@ __task3a_figures(u0_hist, bin_centers, u0_at_spike_hist, p_spike, rho, b, inf_ma
 
 datafile_3b_base = 'data_lif_3b_base.pkl'
 datafile_3b_stochastic = 'data_lif_3b_stochastic.pkl'
+
 
 def __task3b_prepare_base_neurons(datafile, I_):
     num_neurons = 6000
@@ -400,7 +404,7 @@ def __task3b_stochastic_srm_model(dt, spikes_base, spikes_stochastic, num_neuron
 
 
 def __task3b_figures(t_rho, rho_base, rho_srm):
-    plt.figure(3, figsize=(6, 3.5))
+    plt.figure(5, figsize=(6, 3.5))
 
     plt.fill_between(t_rho/ms, np.zeros_like(rho_base*ms), rho_base*ms, label=r'lif')
     # plt.autoscale(axis='x', tight=True)
@@ -412,7 +416,7 @@ def __task3b_figures(t_rho, rho_base, rho_srm):
     plt.ylabel(r'$\rho$ / ms$^{-1}$')
     plt.legend(loc='best')
 
-    plt.figure(4, figsize=(6, 3.5))
+    plt.figure(6, figsize=(6, 3.5))
     plt.plot(t_rho/ms, rho_base*ms - rho_srm*ms)
 
     plt.tight_layout()
